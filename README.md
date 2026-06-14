@@ -6,10 +6,10 @@ A shared expenses app for flatmates, built with Node.js, Express, Prisma, Postgr
 
 ### Prerequisites
 - Node.js
-- A local PostgreSQL database
+- A PostgreSQL database (e.g. NeonDB)
 
 ### 1. Database Setup
-1. Open `backend/.env` and update the `DATABASE_URL` if your local postgres credentials differ from the default (`postgresql://postgres:postgres@localhost:5432/kharchwise?schema=public`).
+1. Open `backend/.env` and ensure `DATABASE_URL` is set to your Postgres instance.
 2. Run migrations to create the schema:
    ```bash
    cd backend
@@ -17,7 +17,7 @@ A shared expenses app for flatmates, built with Node.js, Express, Prisma, Postgr
    ```
 3. Run the seed script:
    ```bash
-   npm run seed
+   npx ts-node prisma/seed.ts
    ```
 
 ### 2. Backend Server
@@ -28,7 +28,7 @@ A shared expenses app for flatmates, built with Node.js, Express, Prisma, Postgr
    ```
 2. Start the server (runs on port 3001):
    ```bash
-   npx ts-node src/index.ts
+   npm run dev
    ```
 
 ### 3. Frontend App
@@ -41,11 +41,11 @@ A shared expenses app for flatmates, built with Node.js, Express, Prisma, Postgr
    ```bash
    npm run dev
    ```
-3. Open the browser to see the 3D card carousel animation.
 
-### Testing the Import Endpoint
-You can test the CSV import pipeline using `curl` or Postman:
-```bash
-curl -X POST -F "file=@/path/to/expenses_export.csv" http://localhost:3001/api/import
-```
-This will return a JSON report of all rows processed and anomalies detected.
+### Application Structure
+- **/api/auth**: Authentication and User registration
+- **/api/groups**: Group management
+- **/api/groups/:id/expenses**: Add, view, and manage expenses
+- **/api/groups/:id/import**: Import CSV exports to automatically categorize expenses
+- **/api/groups/:id/balances**: Automatic Penny-perfect balance computation
+- **/api/users/search**: Search registered users
