@@ -38,7 +38,7 @@ beforeAll(async () => {
       { user_id: uMap['Aisha'].id, group_id: group.id, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: null },
       { user_id: uMap['Rohan'].id, group_id: group.id, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: null },
       { user_id: uMap['Meera'].id, group_id: group.id, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: new Date('2026-03-31T23:59:59Z') },
-      { user_id: uMap['Sam'].id, group_id: group.id, joined_at: new Date('2026-04-15T00:00:00Z'), left_at: null },
+      { user_id: uMap['Sam'].id, group_id: group.id, joined_at: new Date('2026-04-10T00:00:00Z'), left_at: null },
     ]
   });
 

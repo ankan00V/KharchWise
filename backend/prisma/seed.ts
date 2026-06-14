@@ -17,6 +17,7 @@ async function main() {
     { name: 'Meera', canonical_name: 'Meera', email: 'meera@example.com' },
     { name: 'Dev', canonical_name: 'Dev', email: 'dev@example.com' },
     { name: 'Sam', canonical_name: 'Sam', email: 'sam@example.com' },
+    { name: 'Kabir', canonical_name: 'Kabir', email: 'kabir@example.com' },
   ];
 
   const userMap: Record<string, number> = {};
@@ -75,14 +76,19 @@ async function main() {
     {
       user_id: userMap['Sam'],
       group_id: group.id,
-      joined_at: new Date('2026-04-15T00:00:00Z'), // moved in mid-April
+      joined_at: new Date('2026-04-08T00:00:00Z'), // moved in April 8th
       left_at: null,
     },
   ];
 
   for (const m of membershipsData) {
     await prisma.groupMembership.create({
-      data: m,
+      data: {
+        user_id: m.user_id as number,
+        group_id: m.group_id,
+        joined_at: m.joined_at,
+        left_at: m.left_at
+      },
     });
   }
 

@@ -50,7 +50,13 @@ export class BalanceEngine {
 
     // a & b. Process Expenses
     for (const exp of expenses) {
-      if (!exp.paid_by_id) continue; // Skip unknown payer
+      // QUARANTINE: MISSING_PAYER expenses are intentionally excluded here 
+      // per SCOPE.md policy (see ImportAnomaly type MISSING_PAYER). 
+      // ExpenseSplit rows exist and remain visible in expense history, but 
+      // do not affect balances until a payer is assigned via PATCH 
+      // /api/anomalies/:id.
+      if (!exp.paid_by_id) continue;
+
       const payerId = exp.paid_by_id;
 
       for (const split of exp.splits) {
@@ -203,15 +209,52 @@ export class BalanceEngine {
       const shareAmount = userSplit ? userSplit.share_amount.toNumber() : 0;
 
       breakdown.push({
+        id: `exp-${exp.id}`,
         expenseId: exp.id,
         description: exp.description,
         date: exp.date,
         totalAmount: exp.amount_inr.toNumber(),
         userShareAmount: shareAmount,
-        role: role,
+        netEffect: userPaid ? (exp.amount_inr.toNumber() - shareAmount) : -shareAmount,
+        type: 'expense',
         paidBy: exp.paid_by.name
       });
     }
+
+    const settlements = await prisma.settlement.findMany({
+      where: {
+        group_id: groupId,
+        OR: [
+          { from_user_id: userId },
+          { to_user_id: userId }
+        ]
+      },
+      include: {
+        from_user: { select: { name: true } },
+        to_user: { select: { name: true } }
+      }
+    });
+
+    for (const s of settlements) {
+      if (counterpartId) {
+        if (s.from_user_id !== counterpartId && s.to_user_id !== counterpartId) continue;
+      }
+      const isPayer = s.from_user_id === userId;
+      breakdown.push({
+        id: `set-${s.id}`,
+        settlementId: s.id,
+        description: `Settlement: ${s.from_user.name} paid ${s.to_user.name}`,
+        date: s.date,
+        totalAmount: s.amount.toNumber(),
+        userShareAmount: 0,
+        netEffect: isPayer ? s.amount.toNumber() : -s.amount.toNumber(),
+        type: 'settlement',
+        paidBy: s.from_user.name
+      });
+    }
+
+    // Sort by date descending
+    breakdown.sort((a, b) => b.date.getTime() - a.date.getTime());
 
     return breakdown;
   }

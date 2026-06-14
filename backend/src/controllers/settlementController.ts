@@ -8,7 +8,7 @@ const balanceEngine = new BalanceEngine();
 
 // POST /api/groups/:id/settlements
 export const createSettlement = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   const { toUserId, amount, date } = req.body;
   
   if (isNaN(groupId) || !toUserId || !amount) {
@@ -46,7 +46,7 @@ export const createSettlement = async (req: AuthRequest, res: Response): Promise
 
 // GET /api/groups/:id/settlements
 export const listSettlements = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   if (isNaN(groupId)) { res.status(400).json({ error: 'Invalid group ID' }); return; }
 
   try {

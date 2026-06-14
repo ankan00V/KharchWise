@@ -62,7 +62,7 @@ export const listGroups = async (req: AuthRequest, res: Response): Promise<void>
 
 // GET /api/groups/:id
 export const getGroup = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   if (isNaN(groupId)) { res.status(400).json({ error: 'Invalid group ID' }); return; }
 
   try {
@@ -85,7 +85,7 @@ export const getGroup = async (req: AuthRequest, res: Response): Promise<void> =
 
 // POST /api/groups/:id/members
 export const addMember = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   const { userId, joined_at } = req.body;
   
   if (isNaN(groupId) || !userId || !joined_at) {
@@ -154,8 +154,8 @@ export const addMember = async (req: AuthRequest, res: Response): Promise<void> 
 
 // PATCH /api/groups/:id/members/:userId
 export const removeMember = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
-  const userId = parseInt(req.params.userId);
+  const groupId = parseInt(req.params.id as string);
+  const userId = parseInt(req.params.userId as string);
   const left_at = req.body.left_at ? new Date(req.body.left_at) : new Date();
   
   if (isNaN(groupId) || isNaN(userId)) { res.status(400).json({ error: 'Invalid parameters' }); return; }

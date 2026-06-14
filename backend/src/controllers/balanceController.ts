@@ -6,7 +6,7 @@ const balanceEngine = new BalanceEngine();
 
 // GET /api/groups/:id/balances
 export const getGroupBalances = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   if (isNaN(groupId)) { res.status(400).json({ error: 'Invalid group ID' }); return; }
 
   try {
@@ -20,7 +20,7 @@ export const getGroupBalances = async (req: AuthRequest, res: Response): Promise
 
 // GET /api/groups/:id/balances/me
 export const getMyBalanceSummary = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   if (isNaN(groupId)) { res.status(400).json({ error: 'Invalid group ID' }); return; }
   if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
@@ -35,7 +35,7 @@ export const getMyBalanceSummary = async (req: AuthRequest, res: Response): Prom
 
 // GET /api/groups/:id/balances/me/breakdown
 export const getMyExpenseBreakdown = async (req: AuthRequest, res: Response): Promise<void> => {
-  const groupId = parseInt(req.params.id);
+  const groupId = parseInt(req.params.id as string);
   const withUserId = req.query.with ? parseInt(req.query.with as string) : undefined;
   
   if (isNaN(groupId)) { res.status(400).json({ error: 'Invalid group ID' }); return; }

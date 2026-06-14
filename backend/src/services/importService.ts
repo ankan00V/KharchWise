@@ -3,8 +3,9 @@ import { parse } from 'csv-parse';
 import crypto from 'crypto';
 import fuzzball from 'fuzzball';
 import { parse as parseDate, isValid, format, isAfter, isBefore, isEqual } from 'date-fns';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { calculateSplits, SplitType as UtilsSplitType } from '../utils/splits';
 
-// Mock Prisma
 export enum AnomalyType {
   EXACT_DUPLICATE = 'EXACT_DUPLICATE',
   CONFLICTING_DUPLICATE = 'CONFLICTING_DUPLICATE',
@@ -40,39 +41,7 @@ export enum SplitType {
   SHARE = 'SHARE'
 }
 
-const mockUsers = [
-  { id: 1, name: 'Aisha', canonical_name: 'Aisha', email: 'aisha@example.com' },
-  { id: 2, name: 'Rohan', canonical_name: 'Rohan', email: 'rohan@example.com' },
-  { id: 3, name: 'Priya', canonical_name: 'Priya', email: 'priya@example.com' },
-  { id: 4, name: 'Meera', canonical_name: 'Meera', email: 'meera@example.com' },
-  { id: 5, name: 'Dev', canonical_name: 'Dev', email: 'dev@example.com' },
-  { id: 6, name: 'Sam', canonical_name: 'Sam', email: 'sam@example.com' },
-];
-
-const mockMemberships = [
-  { user_id: 1, group_id: 1, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: null },
-  { user_id: 2, group_id: 1, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: null },
-  { user_id: 3, group_id: 1, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: null },
-  { user_id: 4, group_id: 1, joined_at: new Date('2026-02-01T00:00:00Z'), left_at: new Date('2026-03-31T23:59:59Z') },
-  { user_id: 6, group_id: 1, joined_at: new Date('2026-04-15T00:00:00Z'), left_at: null },
-];
-
-const prisma = {
-  user: { findMany: async () => mockUsers },
-  groupMembership: { findMany: async () => mockMemberships },
-  expense: { 
-    findFirst: async (args?: any) => null,
-    create: async (data: any) => ({ id: Math.random(), ...data.data }) 
-  },
-  settlement: {
-    findFirst: async (args?: any) => null,
-    create: async (data: any) => ({ id: Math.random(), ...data.data })
-  },
-  importAnomaly: {
-    create: async (data: any) => ({ id: Math.random(), ...data.data }),
-    update: async (args?: any) => {}
-  }
-};
+const prisma = new PrismaClient();
 const USD_TO_INR = 83.5;
 
 interface CsvRow {
@@ -88,7 +57,7 @@ interface CsvRow {
 }
 
 export class ImportService {
-  public async processCsv(filePath: string) {
+  public async processCsv(filePath: string, groupId: number) {
     const rows = await this.readCsv(filePath);
     const users = await prisma.user.findMany();
     const groupMemberships = await prisma.groupMembership.findMany();
@@ -135,7 +104,7 @@ export class ImportService {
       this.detectNegativeAmount(parsedData, addAnomaly);
       this.detectZeroAmount(parsedData, addAnomaly);
       
-      const isSettlement = this.detectSettlementMisclassified(parsedData, addAnomaly);
+      const isSettlement = this.detectSettlementMisclassified(parsedData, users, addAnomaly);
       
       // Duplicates
       const duplicateAnomaly = this.detectDuplicates(parsedData, processedRowsMap, addAnomaly);
@@ -162,11 +131,33 @@ export class ImportService {
       }
 
       if (isSettlement) {
+        if (!parsedData.resolvedPayerId || !parsedData.resolvedSettlementTargetId) {
+          const anomaly = {
+            anomaly_type: AnomalyType.UNKNOWN_PARTICIPANT,
+            raw_value: `${parsedData.paid_by} -> ${parsedData.split_with}`,
+            description: 'Could not resolve participants for settlement.',
+            action_taken: 'Skipped settlement creation.',
+            status: AnomalyStatus.PENDING_APPROVAL
+          };
+          const created = await prisma.importAnomaly.create({
+            data: {
+              csv_row_number: rowNum,
+              anomaly_type: anomaly.anomaly_type,
+              raw_value: anomaly.raw_value,
+              description: anomaly.description,
+              action_taken: anomaly.action_taken,
+              status: anomaly.status,
+            }
+          });
+          report.anomalies.push({ ...created, rowNum });
+          continue;
+        }
+
         await prisma.settlement.create({
           data: {
-            group_id: 1,
-            from_user_id: parsedData.resolvedPayerId || 1, // Fallback for dummy
-            to_user_id: parsedData.resolvedSettlementTargetId || 1,
+            group_id: groupId,
+            from_user_id: parsedData.resolvedPayerId,
+            to_user_id: parsedData.resolvedSettlementTargetId,
             amount: parsedData.amount_inr || parsedData.parsedAmount,
             date: parsedData.parsedDate || new Date(),
             source_row_number: rowNum,
@@ -175,18 +166,104 @@ export class ImportService {
         continue;
       }
 
+      let splitData: any[] = [];
+      const amountInr = parsedData.amount_inr || parsedData.parsedAmount || 0;
+      const splitTypeParsed = this.parseSplitType(parsedData.split_type);
+
+      if (validParticipants.length > 0 && amountInr > 0) {
+        const splitInputs = validParticipants.map((u: any) => ({ userId: u.id, shareValue: 0 }));
+
+        if (splitTypeParsed === SplitType.EQUAL) {
+          splitInputs.forEach((p: any) => p.shareValue = 1);
+          const splitsResult = calculateSplits(new Prisma.Decimal(amountInr), splitInputs, UtilsSplitType.EQUAL);
+          splitData = splitsResult.map(r => ({ user_id: r.userId, share_amount: r.amount.toNumber() }));
+        } else if (splitTypeParsed === SplitType.UNEQUAL) {
+          const detailParts = (parsedData.split_details || '').split(';');
+          for (const u of validParticipants) {
+             let foundAmount = 0;
+             for (const dp of detailParts) {
+               if (fuzzball.partial_ratio(u.canonical_name, dp) > 80) {
+                  const numMatch = dp.match(/[\d.]+/);
+                  if (numMatch) { foundAmount = parseFloat(numMatch[0]); break; }
+               }
+             }
+             const input = splitInputs.find((s: any) => s.userId === u.id);
+             if (input) input.shareValue = foundAmount;
+          }
+          try {
+            const splitsResult = calculateSplits(new Prisma.Decimal(amountInr), splitInputs, UtilsSplitType.EXACT);
+            splitData = splitsResult.map(r => ({ user_id: r.userId, share_amount: r.amount.toNumber() }));
+          } catch (e: any) {
+            // Fallback to proportional if exact doesn't match total
+            const splitsResult = calculateSplits(new Prisma.Decimal(amountInr), splitInputs, UtilsSplitType.SHARE);
+            splitData = splitsResult.map(r => ({ user_id: r.userId, share_amount: r.amount.toNumber() }));
+          }
+        } else if (splitTypeParsed === SplitType.PERCENTAGE) {
+          const detailParts = (parsedData.split_details || '').split(';');
+          let totalPct = 0;
+          for (const u of validParticipants) {
+             let foundPct = 0;
+             for (const dp of detailParts) {
+               if (fuzzball.partial_ratio(u.canonical_name, dp) > 80) {
+                  const numMatch = dp.match(/[\d.]+/);
+                  if (numMatch) { foundPct = parseFloat(numMatch[0]); break; }
+               }
+             }
+             const input = splitInputs.find((s: any) => s.userId === u.id);
+             if (input) {
+               input.shareValue = foundPct;
+               totalPct += foundPct;
+             }
+          }
+          if (totalPct === 0) {
+            splitInputs.forEach((p: any) => p.shareValue = 100 / validParticipants.length);
+          } else if (totalPct !== 100) {
+            splitInputs.forEach((p: any) => p.shareValue = (p.shareValue || 0) / totalPct * 100);
+          }
+          const splitsResult = calculateSplits(new Prisma.Decimal(amountInr), splitInputs, UtilsSplitType.PERCENTAGE);
+          splitData = splitsResult.map(r => ({ user_id: r.userId, share_amount: r.amount.toNumber() }));
+        } else if (splitTypeParsed === SplitType.SHARE) {
+          const detailParts = (parsedData.split_details || '').split(';');
+          for (const u of validParticipants) {
+             let foundShare = 1;
+             for (const dp of detailParts) {
+               if (fuzzball.partial_ratio(u.canonical_name, dp) > 80) {
+                  const numMatch = dp.match(/[\d.]+/);
+                  if (numMatch) { foundShare = parseFloat(numMatch[0]); break; }
+               }
+             }
+             const input = splitInputs.find((s: any) => s.userId === u.id);
+             if (input) input.shareValue = foundShare;
+          }
+          const splitsResult = calculateSplits(new Prisma.Decimal(amountInr), splitInputs, UtilsSplitType.SHARE);
+          splitData = splitsResult.map(r => ({ user_id: r.userId, share_amount: r.amount.toNumber() }));
+        }
+      }
+
+      const isExactDuplicate = duplicateAnomaly && duplicateAnomaly.anomaly_type === AnomalyType.EXACT_DUPLICATE;
+      const isConflictingDuplicate = duplicateAnomaly && duplicateAnomaly.anomaly_type === AnomalyType.CONFLICTING_DUPLICATE;
+
+      // DECISION POINT: Quarantining Anomalies
+      // WHY: If we insert duplicates or conflicting records, balances reflect double-counting immediately,
+      // creating confusing states for users. Best UX is to "quarantine" them (set deleted_at) so they 
+      // are omitted from balances, while still saving them so Meera can approve or reject. 
+      // This applies the PROPOSED action immediately without losing data.
       const expense = await prisma.expense.create({
         data: {
-          group_id: 1,
+          group_id: groupId,
           description: parsedData.description,
           date: parsedData.parsedDate || new Date(),
           paid_by_id: parsedData.resolvedPayerId || null,
           amount: parsedData.parsedAmount || 0,
           currency: parsedData.resolvedCurrency || 'INR',
-          amount_inr: parsedData.amount_inr || parsedData.parsedAmount || 0,
+          amount_inr: amountInr,
           exchange_rate: parsedData.exchange_rate || null,
-          split_type: this.parseSplitType(parsedData.split_type),
+          split_type: splitTypeParsed,
           source_row_number: rowNum,
+          deleted_at: (isExactDuplicate || isConflictingDuplicate) ? new Date() : null,
+          splits: {
+            create: splitData
+          }
         }
       });
 
@@ -326,7 +403,7 @@ export class ImportService {
         raw_value: raw,
         description: `Date is ambiguous. Possible interpretations: ${interpretations.join(' OR ')}`,
         action_taken: `Resolved chronologically to ${format(parsed as Date, 'yyyy-MM-dd')}`,
-        status: AnomalyStatus.PENDING_APPROVAL
+        status: AnomalyStatus.AUTO_RESOLVED
       });
     } else if (raw !== format(parsed as Date, 'yyyy-MM-dd') && !raw.match(/^[a-zA-Z]{3}\s\d{1,2}$/)) {
       addAnomaly({
@@ -435,9 +512,9 @@ export class ImportService {
     }
   }
 
-  private detectSettlementMisclassified(data: any, addAnomaly: (a: any) => void): boolean {
+  private detectSettlementMisclassified(data: any, users: any[], addAnomaly: (a: any) => void): boolean {
     const isSettlement = (!data.split_type && data.split_with && data.split_with.split(';').length === 1) ||
-                         (data.notes && (data.notes.toLowerCase().includes('settlement') || data.notes.toLowerCase().includes('paid back')));
+                         (data.notes && (data.notes.toLowerCase().includes('settlement') || data.notes.toLowerCase().includes('paid back') || data.notes.toLowerCase().includes('deposit')));
     
     if (isSettlement) {
       addAnomaly({
@@ -448,7 +525,12 @@ export class ImportService {
         status: AnomalyStatus.AUTO_RESOLVED
       });
       if (data.split_with) {
-         data.resolvedSettlementTargetId = 1; 
+         const match = fuzzball.extract(data.split_with.trim(), users.map(u => u.canonical_name), { scorer: fuzzball.token_set_ratio });
+         const bestMatch = match && match.length > 0 ? match[0] : undefined;
+         if (bestMatch && bestMatch[1] > 80) {
+           const user = users.find(u => u.canonical_name === bestMatch[0]);
+           data.resolvedSettlementTargetId = user?.id;
+         }
       }
       return true;
     }
@@ -456,12 +538,24 @@ export class ImportService {
   }
 
   private getDuplicateKey(data: any) {
-    return `${data.parsedDate?.getTime()}-${data.resolvedPayerName}`;
+    return `${data.parsedDate?.getTime()}-${data.resolvedPayerName}-${data.description}`;
   }
 
   private detectDuplicates(data: any, map: Map<string, any>, addAnomaly: (a: any) => void) {
-    const key = this.getDuplicateKey(data);
-    const existing = map.get(key);
+    const dateKey = `${data.parsedDate?.getTime()}`;
+    
+    // Find all previous expenses with the same date
+    let existing = null;
+    for (const [key, val] of map.entries()) {
+      if (key.startsWith(dateKey)) {
+        // Same day. Check description similarity.
+        const score = fuzzball.partial_ratio(val.parsedData.description.toLowerCase(), data.description.toLowerCase());
+        if (score > 80) {
+           existing = val;
+           break;
+        }
+      }
+    }
     
     if (existing) {
       const isExact = existing.parsedData.parsedAmount === data.parsedAmount;
@@ -485,33 +579,40 @@ export class ImportService {
     if (!data.split_with) return [];
     
     const participants = data.split_with.split(';').map((s: string) => s.trim());
-    const validParticipants: any[] = [];
+    const uniqueValidParticipants = new Map();
     
     for (const rawName of participants) {
-      const match = fuzzball.extract(rawName, users.map(u => u.canonical_name), { scorer: fuzzball.token_set_ratio });
+      const match = fuzzball.extract(rawName, users.map(u => u.canonical_name), { scorer: fuzzball.ratio });
       const bestMatch = match && match.length > 0 ? match[0] : undefined;
-      if (bestMatch && bestMatch[1] > 80) {
+      
+      if (bestMatch && bestMatch[1] > 60) {
         const canonicalName = bestMatch[0];
         const user = users.find(u => u.canonical_name === canonicalName);
+        if (!user) continue;
         
-        // Check Dev special case
-        if (canonicalName === 'Dev') {
-          validParticipants.push(user);
+        // Check special cases
+        if (canonicalName === 'Dev' || canonicalName === 'Kabir') {
+          uniqueValidParticipants.set(user.id, user);
           continue;
         }
         
         // Check membership
-        const member = memberships.find(m => m.user_id === user?.id);
+        const member = memberships.find(m => m.user_id === user.id);
         if (member && data.parsedDate) {
-          const joinedAt = member.joined_at ? new Date(member.joined_at) : new Date();
-          const leftAt = member.left_at ? new Date(member.left_at) : null;
+          // DECISION POINT: Date boundary checking
+          // We normalize all dates to string 'YYYY-MM-DD' representation locally before comparison
+          // to completely avoid local timezone vs UTC midnight discrepancies.
           const parsedD = data.parsedDate as Date;
+          const isoDateStr = `${parsedD.getFullYear()}-${String(parsedD.getMonth()+1).padStart(2, '0')}-${String(parsedD.getDate()).padStart(2, '0')}`;
           
-          const isAfterJoin = isAfter(parsedD, joinedAt) || isEqual(parsedD, joinedAt);
-          const isBeforeLeft = !leftAt || isBefore(parsedD, leftAt);
+          const joinIso = member.joined_at ? member.joined_at.toISOString().substring(0, 10) : '';
+          const leftIso = member.left_at ? member.left_at.toISOString().substring(0, 10) : null;
+          
+          const isAfterJoin = isoDateStr >= joinIso;
+          const isBeforeLeft = leftIso === null || isoDateStr <= leftIso;
           
           if (isAfterJoin && isBeforeLeft) {
-            validParticipants.push(user);
+            uniqueValidParticipants.set(user.id, user);
           } else {
             addAnomaly({
               anomaly_type: AnomalyType.MEMBERSHIP_MISMATCH,
@@ -522,7 +623,7 @@ export class ImportService {
             });
           }
         } else {
-          validParticipants.push(user);
+          uniqueValidParticipants.set(user.id, user);
         }
       } else {
         addAnomaly({
@@ -534,7 +635,7 @@ export class ImportService {
         });
       }
     }
-    return validParticipants;
+    return Array.from(uniqueValidParticipants.values());
   }
 
   private validateSplitTypesAndPercentages(data: any, participants: any[], addAnomaly: (a: any) => void) {
