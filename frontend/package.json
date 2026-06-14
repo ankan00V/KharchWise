@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "start": "npx serve -s dist -l tcp://0.0.0.0:${PORT:-3000}",
+    "start": "npx serve -s dist -l ${PORT:-3000} --no-port-switching",
     "lint": "eslint .",
     "preview": "vite preview"
   },
