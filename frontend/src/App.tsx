@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navbar } from './components/Navbar';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
 import { Groups } from './pages/Groups';
 import { Analytics } from './pages/Analytics';
 import { GroupDetail } from './pages/GroupDetail';
@@ -19,6 +20,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         
         <Route element={<><Navbar /><div className="pt-[160px] pb-[96px] max-w-[1200px] mx-auto px-[16px] sm:px-[24px]"><Outlet /></div></>}>
           <Route path="/" element={<Landing />} />

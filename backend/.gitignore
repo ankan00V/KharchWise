@@ -1,9 +1,23 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
 
+# Build output
+dist/
+build/
+
+# Prisma
 /generated/prisma
+
+# Database files
 *.db
 *.db-journal
+
+# Test files
 testHash.ts
 fix-passwords.ts
+test-api.sh
+
+# Uploads
+uploads/
