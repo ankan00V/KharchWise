@@ -45,6 +45,6 @@ app.use('/api/groups/:id/balances', balanceRoutes);
 app.use('/api/groups/:id/expenses', expenseRoutes);
 
 
-app.listen(port, () => {
+app.listen(Number(port), '0.0.0.0', () => {
   console.log(`Kharchwise Backend listening on port ${port}`);
 });
