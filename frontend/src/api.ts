@@ -8,7 +8,8 @@ type RequestOptions = {
 };
 
 export async function api<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, token, isFormData = false } = options;
+  const { method = 'GET', body, isFormData = false } = options;
+  const token = options.token || localStorage.getItem('kw_token');
   
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -20,7 +21,7 @@ export async function api<T = any>(path: string, options: RequestOptions = {}): 
     body: isFormData ? body : body ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !path.includes('/login')) {
     // Token expired or invalid — clear storage and redirect
     localStorage.removeItem('kw_token');
     localStorage.removeItem('kw_user');

@@ -48,3 +48,11 @@
 ### 10. Balance Engine Architecture
 - **Decision:** The Balance Engine (`balanceEngine.ts`) is built as a pure, side-effect-free isolated module. 
 - **Why:** Financial calculation algorithms are highly prone to edge case bugs and changing business requirements. By isolating it entirely from the Express controllers and side effects, it allows comprehensive unit testing (like the money conservation theorem check) and makes it trivial to change rounding rules or calculation logic later without touching API routing.
+
+### 11. Frontend Aesthetics (The "Fold" Theme)
+- **Decision:** Implemented a Bauhaus poster aesthetic inspired by the "Fold" app style.
+- **Why:** To fulfill the recruiter's specific request for a premium, clean, and opinionated visual language. The design uses `Midnight Navy` for text, `Fog White` for the app background, and perfectly pill-shaped buttons (`9999px` border radius) along with soft navy-tinted shadows instead of harsh black borders or gray shadows.
+
+### 12. Centralized API Client
+- **Decision:** Introduced a unified `api.ts` module in the React frontend.
+- **Why:** To prevent code duplication across the many fetch calls and ensure that authentication tokens and session expirations (e.g., handling 401s by clearing `localStorage` and redirecting to login) are managed centrally.

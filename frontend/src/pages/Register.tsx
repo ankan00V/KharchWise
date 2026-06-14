@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { api } from '../api';
 
 import KharchwiseLogo from '../components/KharchwiseLogo';
@@ -32,69 +33,84 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="max-w-md w-full space-y-8" padding="lg">
-        <div className="flex flex-col items-center">
-          <KharchwiseLogo size="lg" />
-          <h2 className="mt-4 text-center text-xl font-bold text-gray-900">
-            Introduce yourself
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-md">
-              {error}
-            </div>
-          )}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hi there! My name is</label>
-              <input
-                type="text"
-                required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#ff652f] focus:border-[#ff652f] sm:text-sm text-lg"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Here's my email address:</label>
-              <input
-                type="email"
-                required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#ff652f] focus:border-[#ff652f] sm:text-sm text-lg"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">And here's my password:</label>
-              <input
-                type="password"
-                required
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#ff652f] focus:border-[#ff652f] sm:text-sm text-lg"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none -z-10"
+           style={{ background: 'radial-gradient(circle, rgba(60,227,112,0.06) 0%, rgba(7,7,9,0) 70%)' }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="max-w-md w-full"
+      >
+        <Card variant="glass" padding="lg" className="space-y-8 border border-[rgba(255,255,255,0.1)] shadow-2xl">
+          <div className="flex flex-col items-center">
+            <KharchwiseLogo size="lg" />
+            <h2 className="mt-6 text-center text-[24px] font-sans font-bold text-white tracking-tight">
+              Introduce yourself
+            </h2>
           </div>
-          <div>
-            <Button
-              type="submit"
-              variant="danger" // Splitwise signup button is often orange
-              className="w-full py-3 text-base"
-              disabled={loading}
-            >
-              {loading ? 'Signing up...' : 'Sign me up!'}
-            </Button>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-[#FF4A00]/10 border border-[#FF4A00]/30 text-[#FF4A00] text-[14px] p-4 rounded-[12px] font-sans"
+              >
+                {error}
+              </motion.div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block font-sans font-semibold text-[rgba(255,255,255,0.7)] mb-2 text-[14px]">Hi there! My name is</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full border border-[rgba(255,255,255,0.2)] rounded-[16px] p-4 font-sans text-[16px] focus:outline-none focus:border-[#3CE370] bg-[#121214] text-white transition-colors shadow-inner"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-sans font-semibold text-[rgba(255,255,255,0.7)] mb-2 text-[14px]">Here's my email address:</label>
+                <input
+                  type="email"
+                  required
+                  className="w-full border border-[rgba(255,255,255,0.2)] rounded-[16px] p-4 font-sans text-[16px] focus:outline-none focus:border-[#3CE370] bg-[#121214] text-white transition-colors shadow-inner"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-sans font-semibold text-[rgba(255,255,255,0.7)] mb-2 text-[14px]">And here's my password:</label>
+                <input
+                  type="password"
+                  required
+                  className="w-full border border-[rgba(255,255,255,0.2)] rounded-[16px] p-4 font-sans text-[16px] focus:outline-none focus:border-[#3CE370] bg-[#121214] text-white transition-colors shadow-inner"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full py-[16px] text-[18px]"
+                disabled={loading}
+              >
+                {loading ? 'Signing up...' : 'Sign me up!'}
+              </Button>
+            </div>
+          </form>
+          <div className="text-center mt-6">
+            <Link to="/login" className="text-[rgba(255,255,255,0.5)] hover:text-white text-[16px] font-sans transition-all hover:underline">
+              Already have an account?
+            </Link>
           </div>
-        </form>
-        <div className="text-center mt-4">
-          <Link to="/login" className="text-gray-500 hover:text-gray-700 text-sm transition-colors">
-            Already have an account?
-          </Link>
-        </div>
-      </Card>
+        </Card>
+      </motion.div>
     </div>
   );
 };

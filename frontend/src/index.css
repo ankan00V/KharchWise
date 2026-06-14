@@ -1,16 +1,160 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-green: #5bc5a7;
-  --color-brand-orange: #ff652f;
-  --color-brand-dark: #333333;
+  /* Colors - Deep Dark Theme Inspired by Fold */
+  --color-fold-bg: #070709;
+  --color-fold-card: rgba(255, 255, 255, 0.03);
+  --color-fold-card-hover: rgba(255, 255, 255, 0.06);
+  --color-fold-border: rgba(255, 255, 255, 0.08);
+  --color-fold-text: rgba(255, 255, 255, 0.95);
+  --color-fold-text-secondary: rgba(255, 255, 255, 0.5);
+  --color-fold-green: #3CE370;
+  --color-fold-orange: #FF4A00;
+  --color-fold-purple: #B28DFF;
+  --color-fold-blue: #459af8;
+  
+  /* Gradient Colors */
+  --gradient-green-start: rgba(60, 227, 112, 0.15);
+  --gradient-green-end: rgba(60, 227, 112, 0);
+  --gradient-orange-start: rgba(255, 74, 0, 0.15);
+  --gradient-orange-end: rgba(255, 74, 0, 0);
+  --gradient-purple-start: rgba(178, 141, 255, 0.15);
+  --gradient-purple-end: rgba(178, 141, 255, 0);
+
+  /* Typography */
+  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Typography — Scale */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 40px;
+  --text-5xl: 48px;
+  --text-display: 72px;
+
+  /* Spacing */
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Border Radius */
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+
+  /* Shadows - Inner glass and soft outer glows */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-neon-green: 0 4px 20px rgba(60, 227, 112, 0.3);
+  --shadow-neon-orange: 0 4px 20px rgba(255, 74, 0, 0.3);
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
+  
+  /* Animations */
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-html, body, #root {
-  background-color: #f9fafb; /* bg-gray-50 */
-  color: #333333;
+@utility page-body {
+  font-family: var(--font-inter);
+  background-color: var(--color-fold-bg);
+  color: var(--color-fold-text);
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  @apply page-body;
+  background-color: var(--color-fold-bg);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at top, rgba(60, 227, 112, 0.04) 0%, #070709 70%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s var(--transition-smooth);
+}
+
+/* Skeleton loader animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Floating animation for ambient elements */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(300%) skewX(-20deg); }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Pulse glow effect */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
 }

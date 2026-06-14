@@ -1,106 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id               Int      @id @default(autoincrement())
-  name             String
-  canonical_name   String
-  email            String?  @unique
-  password_hash    String?
-  created_at       DateTime @default(now())
-
-  // Relations
-  memberships      GroupMembership[]
-  expenses_paid    Expense[]          @relation("PaidBy")
-  expense_splits   ExpenseSplit[]
-  settlements_paid Settlement[]       @relation("SettlementFrom")
-  settlements_rcvd Settlement[]       @relation("SettlementTo")
-  anomalies_resolved ImportAnomaly[]  @relation("ResolvedBy")
+  id                 Int               @id @default(autoincrement())
+  name               String
+  canonical_name     String
+  email              String?           @unique
+  password_hash      String?
+  created_at         DateTime          @default(now())
+  expenses_paid      Expense[]         @relation("PaidBy")
+  expense_splits     ExpenseSplit[]
+  memberships        GroupMembership[]
+  anomalies_resolved ImportAnomaly[]   @relation("ResolvedBy")
+  settlements_paid   Settlement[]      @relation("SettlementFrom")
+  settlements_rcvd   Settlement[]      @relation("SettlementTo")
 }
 
 model Group {
-  id         Int      @id @default(autoincrement())
-  name       String
-  created_at DateTime @default(now())
-
-  // Relations
-  memberships GroupMembership[]
+  id          Int               @id @default(autoincrement())
+  name        String
+  created_at  DateTime          @default(now())
   expenses    Expense[]
+  memberships GroupMembership[]
   settlements Settlement[]
 }
 
-// DECISION POINT: GroupMembership
-// WHY: We track `joined_at` and `left_at` explicitly. Balance calculations must check
-// `joined_at <= expense.date < (left_at OR infinity)` for each member to accurately reflect who 
-// is active on any given date. This elegantly handles Sam moving in and Meera moving out.
 model GroupMembership {
   id        Int       @id @default(autoincrement())
   group_id  Int
   user_id   Int
   joined_at DateTime
   left_at   DateTime?
+  group     Group     @relation(fields: [group_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
 
-  group Group @relation(fields: [group_id], references: [id])
-  user  User  @relation(fields: [user_id], references: [id])
-
-  @@unique([group_id, user_id]) // A user usually belongs to a group once (or we'd need multiple records if they rejoin)
+  @@unique([group_id, user_id])
 }
-
-
 
 model Expense {
-  id                Int       @id @default(autoincrement())
-  group_id          Int
-  description       String
-  date              DateTime
-  paid_by_id        Int?      // Nullable for the "unknown payer" anomaly
-  
-  amount            Decimal   // Original currency value
-  currency          String  @default("INR")
-  amount_inr        Decimal   // Converted value (equals amount if currency is INR)
-  exchange_rate     Decimal?  // Used for USD conversion audit trail
-  
-  split_type        String
-  source_row_number Int?      // Traceability back to the CSV row
-  created_at        DateTime  @default(now())
-
-  // Soft delete logic for duplicate handling
+  id                       Int             @id @default(autoincrement())
+  group_id                 Int
+  description              String
+  date                     DateTime
+  paid_by_id               Int?
+  amount                   Decimal
+  currency                 String          @default("INR")
+  amount_inr               Decimal
+  exchange_rate            Decimal?
+  split_type               String
+  source_row_number        Int?
+  created_at               DateTime        @default(now())
   deleted_at               DateTime?
   superseded_by_anomaly_id Int?
-
-  // Relations
-  group           Group          @relation(fields: [group_id], references: [id])
-  paid_by         User?          @relation("PaidBy", fields: [paid_by_id], references: [id])
-  splits          ExpenseSplit[]
-  
-  // Link back to anomaly if superseded
-  superseded_by_anomaly ImportAnomaly? @relation("SupersededExpense", fields: [superseded_by_anomaly_id], references: [id])
-  
-  anomalies       ImportAnomaly[] @relation("LinkedExpense")
-  duplicate_anomalies ImportAnomaly[] @relation("LinkedDuplicateExpense")
+  group                    Group           @relation(fields: [group_id], references: [id])
+  paid_by                  User?           @relation("PaidBy", fields: [paid_by_id], references: [id])
+  superseded_by_anomaly    ImportAnomaly?  @relation("SupersededExpense", fields: [superseded_by_anomaly_id], references: [id])
+  splits                   ExpenseSplit[]
+  duplicate_anomalies      ImportAnomaly[] @relation("LinkedDuplicateExpense")
+  anomalies                ImportAnomaly[] @relation("LinkedExpense")
 }
 
-// DECISION POINT: ExpenseSplit
-// WHY: This table is the sole source of truth for balances, satisfying Rohan's requirement:
-// "If the app says I owe ₹2,300, I want to see exactly which expenses make that up."
-// Every expense must result in explicit split rows.
 model ExpenseSplit {
   id               Int      @id @default(autoincrement())
   expense_id       Int
   user_id          Int
-  
-  share_amount     Decimal  // Always in INR
-  share_percentage Decimal? // Audit tracking for percentage splits
-  share_units      Decimal? // Audit tracking for share-type splits
-
-  expense Expense @relation(fields: [expense_id], references: [id])
-  user    User    @relation(fields: [user_id], references: [id])
+  share_amount     Decimal
+  share_percentage Decimal?
+  share_units      Decimal?
+  expense          Expense  @relation(fields: [expense_id], references: [id])
+  user             User     @relation(fields: [user_id], references: [id])
 }
 
 model Settlement {
@@ -108,40 +82,29 @@ model Settlement {
   group_id          Int
   from_user_id      Int
   to_user_id        Int
-  amount            Decimal  // Always in INR
+  amount            Decimal
   date              DateTime
   created_at        DateTime @default(now())
   source_row_number Int?
-
-  group     Group @relation(fields: [group_id], references: [id])
-  from_user User  @relation("SettlementFrom", fields: [from_user_id], references: [id])
-  to_user   User  @relation("SettlementTo", fields: [to_user_id], references: [id])
+  from_user         User     @relation("SettlementFrom", fields: [from_user_id], references: [id])
+  group             Group    @relation(fields: [group_id], references: [id])
+  to_user           User     @relation("SettlementTo", fields: [to_user_id], references: [id])
 }
 
-
-
-// DECISION POINT: ImportAnomaly
-// WHY: Meera needs to see and approve modifications or deletions. We track every issue
-// we find during CSV parsing. Some are AUTO_RESOLVED, some PENDING_APPROVAL.
 model ImportAnomaly {
-  id             Int           @id @default(autoincrement())
-  csv_row_number Int
-  anomaly_type   String
-  raw_value      String
-  description    String
-  action_taken   String
-  status         String
-  
-  resolved_by_id Int?
-  resolved_at    DateTime?
-
-  linked_expense_id           Int? // The core expense
-  linked_duplicate_expense_id Int? // The second expense (if an EXACT_DUPLICATE or CONFLICTING_DUPLICATE)
-
-  resolved_by              User?    @relation("ResolvedBy", fields: [resolved_by_id], references: [id])
-  linked_expense           Expense? @relation("LinkedExpense", fields: [linked_expense_id], references: [id])
-  linked_duplicate_expense Expense? @relation("LinkedDuplicateExpense", fields: [linked_duplicate_expense_id], references: [id])
-
-  // Reverse relation for superseded expenses
-  superseded_expenses Expense[] @relation("SupersededExpense")
+  id                          Int       @id @default(autoincrement())
+  csv_row_number              Int
+  anomaly_type                String
+  raw_value                   String
+  description                 String
+  action_taken                String
+  status                      String
+  resolved_by_id              Int?
+  resolved_at                 DateTime?
+  linked_expense_id           Int?
+  linked_duplicate_expense_id Int?
+  superseded_expenses         Expense[] @relation("SupersededExpense")
+  linked_duplicate_expense    Expense?  @relation("LinkedDuplicateExpense", fields: [linked_duplicate_expense_id], references: [id])
+  linked_expense              Expense?  @relation("LinkedExpense", fields: [linked_expense_id], references: [id])
+  resolved_by                 User?     @relation("ResolvedBy", fields: [resolved_by_id], references: [id])
 }

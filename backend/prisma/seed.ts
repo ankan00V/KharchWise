@@ -7,7 +7,8 @@ async function main() {
   console.log('Seeding database...');
 
   // Hash password
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const defaultPassword = process.env.DEFAULT_USER_PASSWORD || 'password123';
+  const passwordHash = await bcrypt.hash(defaultPassword, 10);
 
   // 1. Create Users
   const usersData = [

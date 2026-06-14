@@ -4,16 +4,14 @@ interface Props {
 }
 
 const KharchwiseLogo = ({ size = 'sm', showLabel = true }: Props) => {
-  const textSize = size === 'lg' ? 'text-3xl' : 'text-xl';
+  const textSize = size === 'lg' ? 'text-[32px] leading-[1.18]' : 'text-[24px] leading-[1.33]';
+  const tracking = size === 'lg' ? 'tracking-[-0.96px]' : 'tracking-[-0.72px]';
   return (
-    <div className="flex items-center gap-2">
-      <span className={`${textSize} font-bold`}>
-        <span className="text-[#5bc5a7]">₹</span>
-      </span>
+    <div className="flex items-center gap-8 font-sans font-semibold">
+      <span className={`${textSize} ${tracking} text-electric-blue`}>₹</span>
       {showLabel && (
-        <span className={`${textSize} font-bold tracking-tight`}>
-          <span className="text-[#5bc5a7]">Kharch</span>
-          <span className="text-gray-800">wise</span>
+        <span className={`${textSize} ${tracking} text-midnight-navy`}>
+          Kharchwise
         </span>
       )}
     </div>

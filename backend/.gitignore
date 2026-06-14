@@ -3,3 +3,7 @@ node_modules
 .env
 
 /generated/prisma
+*.db
+*.db-journal
+testHash.ts
+fix-passwords.ts

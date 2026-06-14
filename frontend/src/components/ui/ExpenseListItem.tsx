@@ -1,5 +1,5 @@
-
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 
 type Props = {
   expense: any;
@@ -19,21 +19,21 @@ export const ExpenseListItem = ({ expense, currentUserId, onClick }: Props) => {
 
   let rightLabel = "not involved";
   let rightAmount = "";
-  let rightColorClass = "text-gray-400";
+  let rightColorClass = "text-[rgba(255,255,255,0.5)]"; // default
 
   if (isSettlement) {
     if (iPaid) {
       rightLabel = "you paid";
       rightAmount = `₹${Number(expense.amount_inr || expense.amount).toFixed(2)}`;
-      rightColorClass = "text-[#5bc5a7]";
+      rightColorClass = "text-[#3CE370]"; // Fold Green
     } else if (mySplit) {
       rightLabel = "you received";
       rightAmount = `₹${Number(mySplit.share_amount).toFixed(2)}`;
-      rightColorClass = "text-[#ff652f]";
+      rightColorClass = "text-[#3CE370]";
     } else {
       rightLabel = "settlement";
       rightAmount = `₹${Number(expense.amount_inr || expense.amount).toFixed(2)}`;
-      rightColorClass = "text-gray-500";
+      rightColorClass = "text-[rgba(255,255,255,0.7)]";
     }
   } else {
     if (iPaid) {
@@ -41,37 +41,39 @@ export const ExpenseListItem = ({ expense, currentUserId, onClick }: Props) => {
       const myShare = mySplit ? Number(mySplit.share_amount) : 0;
       const lentAmount = Number(expense.amount_inr || expense.amount) - myShare;
       rightAmount = `₹${Math.abs(lentAmount).toFixed(2)}`;
-      rightColorClass = lentAmount > 0 ? "text-[#5bc5a7]" : "text-gray-500";
+      rightColorClass = lentAmount > 0 ? "text-[#3CE370]" : "text-[rgba(255,255,255,0.7)]";
     } else if (mySplit) {
       rightLabel = "you borrowed";
       rightAmount = `₹${Number(mySplit.share_amount).toFixed(2)}`;
-      rightColorClass = "text-[#ff652f]";
+      rightColorClass = "text-[#FF4A00]"; // Vibrant Orange for owing
     }
   }
 
   return (
-    <div 
-      className={`flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 border-b border-gray-100 last:border-0 cursor-pointer transition-colors ${isDeleted ? 'opacity-40' : ''}`}
+    <motion.div 
+      whileHover={{ scale: 0.99, backgroundColor: "rgba(255,255,255,0.06)" }}
+      whileTap={{ scale: 0.98 }}
+      className={`flex items-center justify-between p-4 sm:p-6 border-b border-[rgba(255,255,255,0.05)] last:border-0 cursor-pointer transition-colors rounded-xl ${isDeleted ? 'opacity-40' : ''}`}
       onClick={onClick}
     >
-      <div className="flex items-center gap-4">
-        <div className="flex flex-col items-center justify-center w-12 text-gray-500">
-          <span className="text-xs uppercase font-medium">{monthStr}</span>
-          <span className="text-xl font-light leading-none">{dayStr}</span>
+      <div className="flex items-center gap-[24px]">
+        <div className="flex flex-col items-center justify-center w-[48px]">
+          <span className="text-[12px] uppercase font-sans font-semibold text-[rgba(255,255,255,0.5)] tracking-[0.5px]">{monthStr}</span>
+          <span className="text-[24px] font-sans font-bold text-white tracking-tight leading-none">{dayStr}</span>
         </div>
         
-        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-500 text-lg">
+        <div className="w-[48px] h-[48px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl flex items-center justify-center text-[24px] shadow-inner">
           {isSettlement ? '💸' : '🧾'}
         </div>
 
         <div className="flex flex-col">
-          <span className="font-medium text-gray-900 truncate max-w-[200px] sm:max-w-xs">{expense.description}</span>
+          <span className="font-sans font-bold text-[18px] text-[rgba(255,255,255,0.95)] tracking-tight truncate max-w-[180px] sm:max-w-xs">{expense.description}</span>
           {expense.paid_by_id ? (
-            <span className="text-xs text-gray-500">
+            <span className="text-[13px] font-sans font-medium text-[rgba(255,255,255,0.5)] mt-0.5">
               {iPaid ? 'you' : expense.paid_by?.name || expense.paid_by?.canonical_name || 'someone'} paid ₹{Number(expense.amount_inr || expense.amount).toFixed(2)}
             </span>
           ) : (
-            <span className="text-xs text-red-500 font-medium">Missing Payer</span>
+            <span className="text-[13px] font-sans font-bold text-[#FF4A00] mt-0.5">Missing Payer</span>
           )}
         </div>
       </div>
@@ -79,13 +81,13 @@ export const ExpenseListItem = ({ expense, currentUserId, onClick }: Props) => {
       <div className="flex flex-col items-end min-w-[90px]">
         {rightAmount ? (
           <>
-            <span className="text-xs text-gray-500">{rightLabel}</span>
-            <span className={`font-medium ${rightColorClass}`}>{rightAmount}</span>
+            <span className="text-[11px] font-sans font-bold text-[rgba(255,255,255,0.5)] uppercase tracking-[0.5px] mb-1">{rightLabel}</span>
+            <span className={`font-sans font-bold text-[18px] tracking-tight ${rightColorClass}`}>{rightAmount}</span>
           </>
         ) : (
-          <span className="text-xs text-gray-400">not involved</span>
+          <span className="text-[13px] font-sans font-semibold text-[rgba(255,255,255,0.4)] tracking-wide">not involved</span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
