@@ -13,5 +13,8 @@
   },
   "prisma": {
     "schema": "backend/prisma/schema.prisma"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
