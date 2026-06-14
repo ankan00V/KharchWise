@@ -266,7 +266,7 @@ export const Analytics = () => {
               <YAxis 
                 stroke="rgba(255,255,255,0.3)"
                 style={{ fontSize: '12px', fontFamily: 'Inter' }}
-                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
+                tickFormatter={(value: number) => `₹${(value/1000).toFixed(0)}k`}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -275,7 +275,7 @@ export const Analytics = () => {
                   borderRadius: '12px',
                   fontFamily: 'Inter'
                 }}
-                formatter={(value) => [`₹${Number(value).toLocaleString()}`, 'Amount']}
+                formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'Amount']}
               />
               <Line 
                 type="monotone" 
@@ -326,7 +326,7 @@ export const Analytics = () => {
                   borderRadius: '12px',
                   fontFamily: 'Inter'
                 }}
-                formatter={(value) => [`₹${Number(value).toLocaleString()}`, 'Spent']}
+                formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'Spent']}
               />
             </PieChart>
           </ResponsiveContainer>
