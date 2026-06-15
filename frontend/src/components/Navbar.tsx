@@ -16,12 +16,12 @@ export const Navbar = () => {
 
   return (
     <>
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-max min-w-[320px] max-w-[800px]">
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-max min-w-[320px]">
         <motion.nav 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
-          className="bg-[rgba(7,7,9,0.5)] backdrop-blur-3xl border border-[rgba(60,227,112,0.1)] rounded-full pl-5 pr-3 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(60,227,112,0.1),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_0_0_1px_rgba(255,255,255,0.02)] flex items-center justify-between gap-12"
+          transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
+          className="bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full pl-6 pr-2.5 py-2.5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] flex items-center justify-between gap-10"
         >
           <Link to="/groups" className="flex items-center no-underline hover:opacity-80 transition-opacity">
             <KharchwiseLogo size="sm" />
@@ -29,25 +29,25 @@ export const Navbar = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <Link to="/groups" className="text-[rgba(255,255,255,0.8)] font-sans font-semibold text-[14px] hover:text-[#3CE370] transition-colors no-underline">
+                <Link to="/groups" className="text-[rgba(255,255,255,0.6)] font-sans font-medium text-[14px] hover:text-white transition-colors no-underline">
                   Home
                 </Link>
-                <div className="w-[1px] h-[14px] bg-[rgba(255,255,255,0.2)] mx-1"></div>
-                <Link to="/analytics" className="text-[rgba(255,255,255,0.8)] font-sans font-semibold text-[14px] hover:text-[#3CE370] transition-colors no-underline">
+                <div className="w-[1px] h-[12px] bg-[rgba(255,255,255,0.1)] mx-2"></div>
+                <Link to="/analytics" className="text-[rgba(255,255,255,0.6)] font-sans font-medium text-[14px] hover:text-white transition-colors no-underline">
                   Analytics
                 </Link>
-                <div className="w-[1px] h-[14px] bg-[rgba(255,255,255,0.2)] mx-1"></div>
+                <div className="w-[1px] h-[12px] bg-[rgba(255,255,255,0.1)] mx-2"></div>
                 <Button
                   onClick={handleLogout}
                   variant="ghost"
-                  className="!px-4 !py-2 !text-[14px] text-[rgba(255,255,255,0.6)] hover:text-[#FF4A00] hover:bg-[#FF4A00]/10 rounded-full"
+                  className="!px-3 !py-1.5 !text-[14px] font-medium text-[rgba(255,255,255,0.5)] hover:text-white hover:bg-white/5 rounded-full transition-all"
                 >
-                  <LogOut className="h-[14px] w-[14px] mr-2" />
+                  <LogOut className="h-[14px] w-[14px] mr-1.5" />
                   Logout
                 </Button>
               </>
             ) : (
-              <Link to="/login" className="bg-[#3CE370] shadow-[0_4px_16px_rgba(60,227,112,0.2),inset_0_1px_0_rgba(255,255,255,0.4)] hover:shadow-[0_6px_24px_rgba(60,227,112,0.3),inset_0_1px_0_rgba(255,255,255,0.6)] rounded-full px-6 py-2.5 font-sans font-semibold text-[14px] text-[#070709] hover:bg-[#32c962] transition-all no-underline active:scale-95">
+              <Link to="/login" className="bg-white hover:bg-[#EAEAEA] text-[#0A0A0C] px-6 py-2.5 rounded-full font-sans font-bold text-[14px] transition-all duration-300 no-underline active:scale-95 shadow-[0_4px_16px_rgba(255,255,255,0.1),inset_0_1px_1px_rgba(255,255,255,0.8)] hover:shadow-[0_4px_20px_rgba(255,255,255,0.15)]">
                 Log in
               </Link>
             )}
@@ -60,8 +60,8 @@ export const Navbar = () => {
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
-            className="flex items-center gap-3 bg-[rgba(7,7,9,0.5)] backdrop-blur-3xl border border-[rgba(255,255,255,0.08)] rounded-full p-1.5 pr-4 shadow-[0_16px_40px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)]"
+            transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.2 }}
+            className="flex items-center gap-3 bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full p-1.5 pr-4 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)]"
           >
             <img 
               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=3CE370&color=070709&bold=true`} 
