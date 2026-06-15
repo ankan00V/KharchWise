@@ -16,12 +16,12 @@ export const Navbar = () => {
 
   return (
     <>
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-max min-w-[320px]">
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-max min-w-[280px]">
         <motion.nav 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
-          className="bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full pl-6 pr-2.5 py-2.5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] flex items-center justify-between gap-10"
+          className="h-[52px] bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full pl-5 pr-2 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] flex items-center justify-between gap-8"
         >
           <Link to="/groups" className="flex items-center no-underline hover:opacity-80 transition-opacity">
             <KharchwiseLogo size="sm" />
@@ -47,7 +47,7 @@ export const Navbar = () => {
                 </Button>
               </>
             ) : (
-              <Link to="/login" className="bg-white hover:bg-[#EAEAEA] text-[#0A0A0C] px-6 py-2.5 rounded-full font-sans font-bold text-[14px] transition-all duration-300 no-underline active:scale-95 shadow-[0_4px_16px_rgba(255,255,255,0.1),inset_0_1px_1px_rgba(255,255,255,0.8)] hover:shadow-[0_4px_20px_rgba(255,255,255,0.15)]">
+              <Link to="/login" className="bg-white hover:bg-[#EAEAEA] text-[#0A0A0C] px-5 py-1.5 rounded-full font-sans font-bold text-[13px] transition-all duration-300 no-underline active:scale-95 shadow-[0_4px_16px_rgba(255,255,255,0.1),inset_0_1px_1px_rgba(255,255,255,0.8)] hover:shadow-[0_4px_20px_rgba(255,255,255,0.15)] flex items-center justify-center h-[36px]">
                 Log in
               </Link>
             )}
