@@ -98,7 +98,28 @@ export const ExpensesTab = () => {
     show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
   };
 
-  if (loading) return <div className="text-[rgba(255,255,255,0.5)] font-sans font-semibold py-8 flex justify-center">Loading expenses...</div>;
+  if (loading) return (
+    <div className="space-y-[48px]">
+      <div className="flex justify-between items-center bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 rounded-[24px]">
+        <div className="skeleton h-[40px] w-[200px] rounded-[12px]"></div>
+        <div className="skeleton h-[40px] w-[140px] rounded-[12px]"></div>
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 rounded-[24px] flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="skeleton w-[48px] h-[48px] rounded-full"></div>
+              <div>
+                <div className="skeleton h-[20px] w-[150px] rounded-[6px] mb-2"></div>
+                <div className="skeleton h-[14px] w-[100px] rounded-[4px]"></div>
+              </div>
+            </div>
+            <div className="skeleton h-[24px] w-[80px] rounded-[6px]"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-[48px]">

@@ -74,7 +74,35 @@ export const BalancesTab = () => {
     return Object.fromEntries(group.memberships.map((m: any) => [m.user.id, m.user.name]));
   }, [group?.memberships]);
 
-  if (loading) return <div className="text-[rgba(255,255,255,0.5)] font-sans font-semibold py-8 flex justify-center">Calculating balances...</div>;
+  if (loading) return (
+    <div className="space-y-[48px]">
+      <div className="bg-[rgba(255,255,255,0.03)] backdrop-blur-2xl border border-[rgba(255,255,255,0.08)] rounded-[32px] p-8 lg:p-12 text-center">
+        <div className="skeleton h-[16px] w-[120px] rounded-[6px] mx-auto mb-8"></div>
+        <div className="skeleton h-[80px] w-[280px] sm:w-[360px] rounded-[24px] mx-auto mb-4"></div>
+        <div className="skeleton h-[24px] w-[180px] rounded-[8px] mx-auto mb-8"></div>
+        <div className="flex justify-center gap-4 mt-8">
+          <div className="skeleton h-[48px] w-[140px] rounded-[16px]"></div>
+          <div className="skeleton h-[48px] w-[120px] rounded-[16px]"></div>
+        </div>
+      </div>
+      <div>
+        <div className="skeleton h-[24px] w-[150px] rounded-[8px] mb-6"></div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2].map(i => (
+            <div key={i} className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] p-6 rounded-[24px] flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="skeleton w-[48px] h-[48px] rounded-full"></div>
+                <div>
+                  <div className="skeleton h-[20px] w-[120px] rounded-[6px] mb-2"></div>
+                  <div className="skeleton h-[14px] w-[80px] rounded-[4px]"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   const myNet = mySummary ? mySummary.totalOwedToUser - mySummary.totalUserOwes : 0;
   let runningTotal = 0;

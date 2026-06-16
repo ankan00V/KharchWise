@@ -9,7 +9,19 @@ export const GroupDetail = () => {
 
   const { data: group, error, mutate: refreshGroup } = useSWR(id ? `/api/groups/${id}` : null, api);
 
-  if (!group && !error) return <div className="p-8 flex justify-center font-sans text-[rgba(255,255,255,0.5)] font-semibold">Loading group...</div>;
+  if (!group && !error) return (
+    <div className="w-full relative">
+      <div className="absolute top-0 left-0 w-[600px] h-[600px] pointer-events-none -z-10 blur-[120px] opacity-20"
+           style={{ background: 'radial-gradient(circle, rgba(60,227,112,0.15) 0%, rgba(7,7,9,0) 70%)' }} />
+      <div className="mb-[48px]">
+        <div className="skeleton h-[20px] w-[140px] rounded-[8px] mb-6"></div>
+        <div className="skeleton h-[64px] w-[400px] rounded-[16px]"></div>
+      </div>
+      <div className="mb-[48px]">
+        <div className="skeleton h-[60px] w-[500px] rounded-[24px]"></div>
+      </div>
+    </div>
+  );
   if (error) return <div className="p-8 flex justify-center font-sans text-red-500 font-semibold">Error loading group</div>;
 
   const tabs = [
