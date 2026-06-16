@@ -4,10 +4,10 @@ interface Props {
 }
 
 const KharchwiseLogo = ({ size = 'sm' }: Props) => {
-  const heightClass = size === 'lg' ? 'h-10' : 'h-6';
+  const heightClass = size === 'lg' ? 'h-12' : 'h-7';
   return (
-    <div className={`flex items-center ${heightClass}`}>
-      <img src="/logo.png" alt="Kharchwise" className="h-[200%] w-auto object-contain scale-[1.5] origin-left" />
+    <div className={`flex items-center justify-center ${heightClass}`}>
+      <img src="/logo.png" alt="Kharchwise" className="h-full w-auto object-contain scale-[1.4]" />
     </div>
   );
 };
