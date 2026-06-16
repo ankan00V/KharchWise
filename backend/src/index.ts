@@ -18,7 +18,7 @@ const port = process.env.PORT || 3001;
 
 // CORS configuration for production
 const corsOptions = {
-  origin: true, // Allow any origin in development
+  origin: ['https://kharchwise-six.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200
 };
