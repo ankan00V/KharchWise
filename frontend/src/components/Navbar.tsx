@@ -23,7 +23,7 @@ export const Navbar = () => {
           transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
           className="h-[52px] bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full pl-5 pr-2 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] flex items-center justify-between gap-8"
         >
-          <Link to="/groups" className="flex items-center no-underline hover:opacity-80 transition-opacity">
+          <Link to={user ? "/groups" : "/"} className="flex items-center no-underline hover:opacity-80 transition-opacity">
             <KharchwiseLogo size="sm" />
           </Link>
           <div className="flex items-center gap-4">
