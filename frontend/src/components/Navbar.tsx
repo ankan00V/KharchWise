@@ -24,9 +24,9 @@ export const Navbar = () => {
           className={`h-[52px] bg-[#0A0A0C]/60 backdrop-blur-[40px] saturate-[1.2] border border-white/[0.08] rounded-full shadow-[0_24px_48px_-12px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.06)] flex items-center gap-8 ${user ? 'pl-5 pr-2 justify-between' : 'px-4 justify-center'}`}
         >
           {user && (
-            <Link to="/groups" className="flex items-center no-underline hover:opacity-80 transition-opacity">
+            <div className="flex items-center">
               <KharchwiseLogo size="sm" />
-            </Link>
+            </div>
           )}
           <div className="flex items-center gap-4">
             {user ? (
@@ -82,9 +82,9 @@ export const Navbar = () => {
 
       {!user && (
         <div className="fixed top-8 left-8 lg:left-12 z-50">
-          <Link to="/" className="flex items-center no-underline hover:opacity-80 transition-opacity">
+          <div className="flex items-center">
             <KharchwiseLogo size="lg" />
-          </Link>
+          </div>
         </div>
       )}
     </>
