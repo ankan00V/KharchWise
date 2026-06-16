@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import useSWR from 'swr';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../api';
@@ -9,24 +10,12 @@ export const ImportTab = () => {
   const { group, id: groupId } = useOutletContext<any>();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [anomalies, setAnomalies] = useState<any[]>([]);
   const [importReport, setImportReport] = useState<any>(null);
+
+  const { data: anomalies = [], mutate: fetchAnomalies } = useSWR(groupId ? `/api/groups/${groupId}/anomalies` : null, api);
 
   // Anomaly Resolution State
   const [selectedPayerIds, setSelectedPayerIds] = useState<Record<number, string>>({});
-
-  const fetchAnomalies = useCallback(async () => {
-    try {
-      const data = await api(`/api/groups/${groupId}/anomalies`);
-      setAnomalies(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [groupId]);
-
-  useEffect(() => {
-    fetchAnomalies();
-  }, []); // Run once on mount or when id changes through routing
 
   const handleUpload = async () => {
     if (!file) return;

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,10 +9,11 @@ import { ExpenseListItem } from '../../components/ui/ExpenseListItem';
 import { api } from '../../api';
 
 export const ExpensesTab = () => {
-  const { id, group } = useOutletContext<any>();
+  const { id, group, refreshGroup } = useOutletContext<any>();
   const { user } = useAuth();
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { data: expenses = [], isLoading: loading, mutate: fetchExpenses } = useSWR(id ? `/api/groups/${id}/expenses` : null, api);
+
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Add Expense State
@@ -23,21 +25,6 @@ export const ExpensesTab = () => {
 
   // Anomaly Resolution State
   const [selectedPayerIds, setSelectedPayerIds] = useState<Record<number, string>>({});
-
-  const fetchExpenses = useCallback(async () => {
-    try {
-      const data = await api(`/api/groups/${id}/expenses`);
-      setExpenses(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) fetchExpenses();
-  }, [id, fetchExpenses]);
 
   const [splitType, setSplitType] = useState('EQUAL');
   const [splitValues, setSplitValues] = useState<Record<number, string>>({});

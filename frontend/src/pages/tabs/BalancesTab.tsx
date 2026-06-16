@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import useSWR from 'swr';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -9,50 +10,43 @@ import { api } from '../../api';
 export const BalancesTab = () => {
   const { id, group } = useOutletContext<any>();
   const { user } = useAuth();
-  const [groupBalances, setGroupBalances] = useState<any[]>([]);
-  const [mySummary, setMySummary] = useState<any>(null);
-  const [myBreakdown, setMyBreakdown] = useState<any[]>([]);
-  const [quarantinedCount, setQuarantinedCount] = useState(0);
+  
+  const { data: groupData, mutate: mutateGroupBalances } = useSWR(id ? `/api/groups/${id}/balances` : null, api);
+  const { data: myData, mutate: mutateMySummary } = useSWR(id ? `/api/groups/${id}/balances/me` : null, api);
+  const { data: breakdownData, mutate: mutateMyBreakdown } = useSWR(id ? `/api/groups/${id}/balances/me/breakdown` : null, api);
+  const { data: expensesData, mutate: mutateExpenses } = useSWR(id ? `/api/groups/${id}/expenses` : null, api);
+
+  const fetchBalances = () => {
+    mutateGroupBalances();
+    mutateMySummary();
+    mutateMyBreakdown();
+    mutateExpenses();
+  };
+
+  const groupBalances = groupData?.balances || [];
+  const mySummary = myData || null;
+  const myBreakdown = breakdownData?.breakdown || [];
+  const loading = !groupData || !myData || !breakdownData || !expensesData;
+
+  const quarantinedCount = useMemo(() => {
+    if (!expensesData) return 0;
+    let qCount = 0;
+    for (const exp of expensesData) {
+      const isQuarantined = !exp.paid_by_id || exp.deleted_at || (exp.anomalies && exp.anomalies.some((a: any) => a.status === 'PENDING_APPROVAL'));
+      if (isQuarantined) {
+        const involvesMe = exp.paid_by_id === user?.id || exp.splits?.some((s: any) => s.user_id === user?.id);
+        if (involvesMe) qCount++;
+      }
+    }
+    return qCount;
+  }, [expensesData, user?.id]);
+
   const [expandedBreakdown, setExpandedBreakdown] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Settlement state
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [settleTo, setSettleTo] = useState('');
   const [settleAmount, setSettleAmount] = useState('');
-
-  const fetchBalances = useCallback(async () => {
-    try {
-      const [groupData, myData, breakdownData, expensesData] = await Promise.all([
-        api(`/api/groups/${id}/balances`),
-        api(`/api/groups/${id}/balances/me`),
-        api(`/api/groups/${id}/balances/me/breakdown`),
-        api(`/api/groups/${id}/expenses`)
-      ]);
-
-      setGroupBalances(groupData.balances);
-      setMySummary(myData);
-      setMyBreakdown(breakdownData.breakdown);
-
-      let qCount = 0;
-      for (const exp of expensesData) {
-        const isQuarantined = !exp.paid_by_id || exp.deleted_at || (exp.anomalies && exp.anomalies.some((a: any) => a.status === 'PENDING_APPROVAL'));
-        if (isQuarantined) {
-          const involvesMe = exp.paid_by_id === user?.id || exp.splits?.some((s: any) => s.user_id === user?.id);
-          if (involvesMe) qCount++;
-        }
-      }
-      setQuarantinedCount(qCount);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user?.id]);
-
-  useEffect(() => {
-    if (id) fetchBalances();
-  }, [id, fetchBalances]);
 
   const handleSettleUp = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import useSWR from 'swr';
 import { api } from '../api';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -15,28 +16,11 @@ interface GroupMembership {
 }
 
 export const Groups = () => {
-  const [groups, setGroups] = useState<GroupMembership[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: groups = [], isLoading: loading, mutate: fetchGroups } = useSWR('/api/groups', api);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [creating, setCreating] = useState(false);
-
-  const fetchGroups = async () => {
-    try {
-      const data = await api('/api/groups');
-      setGroups(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line
-    fetchGroups();
-  }, []);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();

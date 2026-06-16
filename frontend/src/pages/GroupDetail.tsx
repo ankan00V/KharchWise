@@ -1,28 +1,16 @@
-import { useState, useEffect } from 'react';
 import { useParams, Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import useSWR from 'swr';
 import { api } from '../api';
 
 export const GroupDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [group, setGroup] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const location = useLocation();
 
-  const fetchGroup = async () => {
-    try {
-      const data = await api(`/api/groups/${id}`);
-      setGroup(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { data: group, error, mutate: refreshGroup } = useSWR(id ? `/api/groups/${id}` : null, api);
 
-  useEffect(() => {
-    // eslint-disable-next-line
-    if (id) fetchGroup();
-  }, [id]);
-
-  if (!group) return <div className="p-8 flex justify-center font-sans text-[rgba(255,255,255,0.5)] font-semibold">Loading group...</div>;
+  if (!group && !error) return <div className="p-8 flex justify-center font-sans text-[rgba(255,255,255,0.5)] font-semibold">Loading group...</div>;
+  if (error) return <div className="p-8 flex justify-center font-sans text-red-500 font-semibold">Error loading group</div>;
 
   const tabs = [
     { name: 'Expenses', path: 'expenses' },
@@ -91,7 +79,7 @@ export const GroupDetail = () => {
       </motion.div>
 
       <div className="pb-24">
-        <Outlet context={{ group, id, refreshGroup: fetchGroup }} />
+        <Outlet context={{ group, id, refreshGroup }} />
       </div>
     </div>
   );
