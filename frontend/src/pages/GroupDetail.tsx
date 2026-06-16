@@ -7,7 +7,7 @@ export const GroupDetail = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
 
-  const { data: group, error, mutate: refreshGroup } = useSWR(id ? `/api/groups/${id}` : null, api);
+  const { data: group, error, mutate: refreshGroup } = useSWR<any>(id ? `/api/groups/${id}` : null, api);
 
   if (!group && !error) return (
     <div className="w-full relative">

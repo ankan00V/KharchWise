@@ -11,10 +11,10 @@ export const BalancesTab = () => {
   const { id, group } = useOutletContext<any>();
   const { user } = useAuth();
   
-  const { data: groupData, mutate: mutateGroupBalances } = useSWR(id ? `/api/groups/${id}/balances` : null, api);
-  const { data: myData, mutate: mutateMySummary } = useSWR(id ? `/api/groups/${id}/balances/me` : null, api);
-  const { data: breakdownData, mutate: mutateMyBreakdown } = useSWR(id ? `/api/groups/${id}/balances/me/breakdown` : null, api);
-  const { data: expensesData, mutate: mutateExpenses } = useSWR(id ? `/api/groups/${id}/expenses` : null, api);
+  const { data: groupData, mutate: mutateGroupBalances } = useSWR<any>(id ? `/api/groups/${id}/balances` : null, api);
+  const { data: myData, mutate: mutateMySummary } = useSWR<any>(id ? `/api/groups/${id}/balances/me` : null, api);
+  const { data: breakdownData, mutate: mutateMyBreakdown } = useSWR<any>(id ? `/api/groups/${id}/balances/me/breakdown` : null, api);
+  const { data: expensesData, mutate: mutateExpenses } = useSWR<any[]>(id ? `/api/groups/${id}/expenses` : null, api);
 
   const fetchBalances = () => {
     mutateGroupBalances();
@@ -158,7 +158,7 @@ export const BalancesTab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {myBreakdown.map((item) => {
+                    {myBreakdown.map((item: any) => {
                       runningTotal += item.netEffect;
                       return (
                         <tr key={item.id} className="border-b border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
@@ -195,7 +195,7 @@ export const BalancesTab = () => {
           </Card>
         ) : (
           <div className="grid gap-[24px] sm:grid-cols-2">
-            {groupBalances.map((b, i) => {
+            {groupBalances.map((b: any, i: number) => {
               const isMeOwes = b.fromUserId === user?.id;
               const isOwedToMe = b.toUserId === user?.id;
               

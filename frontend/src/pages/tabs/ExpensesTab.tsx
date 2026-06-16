@@ -9,10 +9,10 @@ import { ExpenseListItem } from '../../components/ui/ExpenseListItem';
 import { api } from '../../api';
 
 export const ExpensesTab = () => {
-  const { id, group, refreshGroup } = useOutletContext<any>();
+  const { id, group } = useOutletContext<any>();
   const { user } = useAuth();
   
-  const { data: expenses = [], isLoading: loading, mutate: fetchExpenses } = useSWR(id ? `/api/groups/${id}/expenses` : null, api);
+  const { data: expenses = [], isLoading: loading, mutate: fetchExpenses } = useSWR<any[]>(id ? `/api/groups/${id}/expenses` : null, api);
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
 

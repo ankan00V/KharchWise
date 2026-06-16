@@ -6,17 +6,8 @@ import { api } from '../api';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 
-interface GroupMembership {
-  id: number;
-  name: string;
-  membership: {
-    joined_at: string;
-    left_at: string | null;
-  };
-}
-
 export const Groups = () => {
-  const { data: groups = [], isLoading: loading, mutate: fetchGroups } = useSWR('/api/groups', api);
+  const { data: groups = [], isLoading: loading, mutate: fetchGroups } = useSWR<any[]>('/api/groups', api);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');

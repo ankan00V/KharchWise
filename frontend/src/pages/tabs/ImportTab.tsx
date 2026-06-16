@@ -12,7 +12,7 @@ export const ImportTab = () => {
   const [loading, setLoading] = useState(false);
   const [importReport, setImportReport] = useState<any>(null);
 
-  const { data: anomalies = [], mutate: fetchAnomalies } = useSWR(groupId ? `/api/groups/${groupId}/anomalies` : null, api);
+  const { data: anomalies = [], mutate: fetchAnomalies } = useSWR<any[]>(groupId ? `/api/groups/${groupId}/anomalies` : null, api);
 
   // Anomaly Resolution State
   const [selectedPayerIds, setSelectedPayerIds] = useState<Record<number, string>>({});
