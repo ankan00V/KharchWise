@@ -1,6 +1,5 @@
 # KharchWise Data Import Report
 
-**Generated on:** June 17, 2026  
 **File Processed:** `trip_expenses_export.csv`  
 **Total Rows Processed:** 142  
 
