@@ -166,6 +166,7 @@ export class BalanceEngine {
 
     return {
       userId,
+      netBalance: roundToTwoDecimals(totalOwedToUser - totalUserOwes),
       totalOwedToUser: roundToTwoDecimals(totalOwedToUser),
       totalUserOwes: roundToTwoDecimals(totalUserOwes),
       breakdown
