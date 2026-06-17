@@ -1,24 +1,37 @@
-# Scope and Anomaly Log
+# Scope & Data Anomaly Management
 
-### Anomaly Detectors Implemented
-1. **NUMBER_FORMAT**: Detects commas in amounts (e.g. "1,200") and strips them. (AUTO_RESOLVED)
-2. **WHITESPACE**: Trims leading/trailing whitespace in amounts or names. (AUTO_RESOLVED)
-3. **PRECISION_ROUNDING**: Rounds amounts to 2 decimals using round half up. (AUTO_RESOLVED)
-4. **DATE_FORMAT**: Normalizes dates into ISO (`YYYY-MM-DD`). Infers year for "Mon DD". (AUTO_RESOLVED)
-5. **DATE_AMBIGUOUS**: Flags dates like "04/05/2026" that could be DD/MM or MM/DD, resolving chronologically based on file context but marking for review. (AUTO_RESOLVED / PENDING_APPROVAL)
-6. **NAME_NORMALIZATION**: Fuzzy-matches names to canonical Users. (AUTO_RESOLVED if score >80, else PENDING_APPROVAL)
-7. **MISSING_PAYER**: QUARANTINED from balance calculations until resolved.
-8. **MISSING_CURRENCY**: Empty currency defaults to INR. (AUTO_RESOLVED)
-9. **CURRENCY_CONVERSION**: Converts USD to INR at a fixed config rate. (AUTO_RESOLVED)
-10. **NEGATIVE_AMOUNT**: Treats negative amounts as credits/refunds, imported standalone. (PENDING_APPROVAL)
-11. **ZERO_AMOUNT**: Imports 0 amount as a valid zero-value expense. (AUTO_RESOLVED)
-12. **SETTLEMENT_MISCLASSIFIED**: Detects rows missing split_type with only 1 split_with target, reclassifying them as a `Settlement` instead of an `Expense`. (AUTO_RESOLVED)
-13. **PERCENTAGE_MISMATCH**: Detects when percentage splits do not sum to exactly 100%. (PENDING_APPROVAL)
-14. **SPLIT_TYPE_CONTRADICTION**: Detects when split_type is 'equal' but split_details are provided. (AUTO_RESOLVED)
-15. **MEMBERSHIP_MISMATCH**: Checks if a user in split_with was an active group member on the expense date. (PENDING_APPROVAL)
-16. **UNKNOWN_PARTICIPANT**: Detects participants who aren't canonical users or special cases. (PENDING_APPROVAL)
-17. **EXACT_DUPLICATE** / **CONFLICTING_DUPLICATE**: Detects duplicates based on date, description fuzzy matching, and amounts. (PENDING_APPROVAL)
+This document details the scope of the data anomalies encountered during CSV imports, how they are handled, and the underlying PostgreSQL database schema supporting the application.
 
-### Database Schema Notes
-- Soft deletion is used for expenses (`deleted_at`, `superseded_by_anomaly_id`) to allow Meera to approve candidate duplicates before they vanish.
-- Idempotency is supported via hashing the CSV row and tracking `source_row_number`.
+## 1. Anomaly Log & Data Problem Handling
+When importing financial data via CSV, the real-world data often contains inconsistencies. Instead of aborting an entire 500-row CSV import because of one bad row, KharchWise uses a **Quarantine Architecture**.
+
+Valid rows are instantly inserted into the database and affect balances. Invalid or anomalous rows are inserted into the `ImportAnomaly` table. These rows are **quarantined** and do not affect user balances until a user explicitly resolves them through the UI.
+
+### Data Problems Encountered & Actions Taken
+
+| Data Problem Detected | Action Taken by KharchWise Import Logic |
+| :--- | :--- |
+| **Exact Duplicate Row** (Same Amount, Date, Description, Payer) | The row is skipped entirely. A silent `DUPLICATE_ROW` anomaly is logged for auditing, but requires no user action. |
+| **Suspected Duplicate** (Same Amount & Date, but slightly different Description/Payer) | Logged as `SUSPECTED_DUPLICATE` anomaly. The row is quarantined. The user is prompted via the UI to either *Approve* (treat as distinct expense) or *Reject* (discard as duplicate). |
+| **Unknown Payer / User** (The "Paid By" name in CSV doesn't match any group member) | Logged as `UNKNOWN_PAYER` anomaly. The row is quarantined. The user is prompted to map the unknown string (e.g., "Ankan") to an actual registered group member ID. Once mapped, the anomaly is resolved and the expense becomes active. |
+| **Negative Amounts** (Refunds, cashbacks, or data-entry errors) | Logged as `NEGATIVE_AMOUNT` anomaly. The row is quarantined. The user is given the choice to either *Discard* the negative row or convert it into an *Absolute Positive* value. |
+| **Missing Split Information** | Handled automatically. The application assumes the split type is `EQUAL` and equally divides the expense among all members who were active in the group on the specified transaction date. |
+
+## 2. Database Schema
+KharchWise is built on a highly relational PostgreSQL database managed via Prisma ORM.
+
+### Core Tables
+
+*   **`User`**: Represents individuals. Holds authentication data, canonical names, and relations to expenses they paid and their group memberships.
+*   **`Group`**: Represents a shared expense environment (e.g., "Goa Trip").
+*   **`GroupMembership`**: A join table mapping Users to Groups. It tracks `joined_at` and `left_at` timestamps to ensure expenses are only split among members active at the time of the transaction.
+
+### Financial Tables
+
+*   **`Expense`**: The core transactional record. Tracks `amount`, `description`, `date`, `paid_by_id`, and `split_type`. Also includes a `deleted_at` field for soft deletes.
+*   **`ExpenseSplit`**: Represents the granular breakdown of how much each user owes for a specific `Expense`. Supports equal, percentage, or exact amount splits.
+*   **`Settlement`**: Records when a user pays back another user, reducing their owed balance without creating a new expense. Tracks `from_user_id` and `to_user_id`.
+
+### Anomaly Management Tables
+
+*   **`ImportAnomaly`**: The quarantine table. Records the exact `csv_row_number`, the `raw_value` that caused the issue, the `anomaly_type`, and its resolution `status` (e.g., `PENDING_APPROVAL`, `RESOLVED`). It features relational links back to the user who resolved it and the final `Expense` record it produced upon resolution.

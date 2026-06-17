@@ -1,58 +1,44 @@
 # Decision Log
 
-### 1. Database ORM & Connection
-- **Decision:** Use Prisma with PostgreSQL.
-- **Why:** Prisma provides excellent type safety and auto-generated migrations which perfectly fit the 2-day rapid development constraint. PostgreSQL is robust and standard for relational DBs.
-- **Alternatives Considered:** Raw SQL via `pg` or `typeorm`. Prisma was chosen for developer velocity.
-- **Note:** Pinned Prisma 5.x — v7 requires migrating to prisma.config.ts for datasource URLs, which adds setup complexity not justified for this project's timeline.
+This document records the most significant architectural and design decisions made during the development of KharchWise. It details the options considered and the rationale behind the final choices.
 
-### 2. GroupMembership Tracking
-- **Decision:** Explicitly track `joined_at` and `left_at` in a `GroupMembership` table instead of a simple boolean `isActive`.
-- **Why:** Balances need to be point-in-time accurate. When Sam moves in or Meera moves out, expenses logged on a specific date should only be split among active members *on that date*. Checking `joined_at <= expense.date < (left_at OR infinity)` handles this elegantly.
-- **Alternatives Considered:** Creating new "groups" every time someone joins or leaves, which would fragment the history.
+## 1. Database Choice: PostgreSQL + Prisma ORM
+**Options Considered:**
+1. NoSQL (MongoDB)
+2. SQL (PostgreSQL via Prisma ORM)
 
-### 3. ExpenseSplit as Source of Truth
-- **Decision:** An `ExpenseSplit` table explicitly logs every single member's financial share (in INR) for every expense.
-- **Why:** Satisfies Rohan's requirement: *"If the app says I owe ₹2,300, I want to see exactly which expenses make that up."* Aggregate balances can be dynamically computed from these splits without "magic numbers."
-- **Alternatives Considered:** Only storing the raw expense and recalculating splits on the fly. This was rejected because split calculations (like percentages) can suffer from rounding inconsistencies if not materialized.
+**Decision:** We chose **PostgreSQL via Prisma ORM**.
 
-### 4. Special Case for Dev
-- **Decision:** Do not add Dev to `GroupMembership`, but add him as a `User` and allow him in `ExpenseSplit`.
-- **Why:** Dev is a one-time guest. Membership governs ongoing visibility (like rent or wifi), but individual expenses can still explicitly list him as a participant.
-- **Alternatives Considered:** Adding him to the group and expiring his membership instantly, but this blurs the line between flatmates and guests.
+**Why:** KharchWise is fundamentally a financial application. Financial data is highly relational: Users belong to Groups, Expenses belong to Groups, and Expenses are divided into complex, many-to-many ExpenseSplits among Users. Trying to map this highly relational, normalized data structure into NoSQL documents would lead to data duplication and complex manual integrity checks. 
+Furthermore, ACID compliance in PostgreSQL guarantees that money is not "lost" during concurrent transactions. We selected Prisma as the ORM because its strict, auto-generated TypeScript typings eliminate a massive class of runtime errors during development, providing confidence when calculating exact balances.
 
-### 5. USD_TO_INR Conversion
-- **Decision:** Use a fixed constant `USD_TO_INR = 83.5` during import.
-- **Why:** For this assignment, a fixed rate is sufficient and predictable.
-- **Alternatives Considered:** Calling a live FX API or storing a date-indexed FX table, which is too heavy for the prompt scope.
+## 2. Global API Caching Architecture: SWR vs State Management
+**Options Considered:**
+1. Standard React `useState` / `useEffect` + Redux for global state
+2. `@tanstack/react-query`
+3. `swr` (Stale-While-Revalidate) by Vercel
 
-### 6. Precision Rounding
-- **Decision:** Round half up to 2 decimals using `Math.round(val * 100) / 100`.
-- **Why:** Standard math rounding is expected by consumers in financial apps, avoiding the drift of banker's rounding.
-- **Alternatives Considered:** Banker's rounding (round half to even).
+**Decision:** We chose **`swr`**.
 
-### 7. Fuzzy Matching (Name Normalization)
-- **Decision:** Use `fuzzball` library with `token_set_ratio`.
-- **Why:** Easily resolves minor inconsistencies ("Priya", "Priya S", "rohan ") against canonical names with a threshold score (80).
-- **Alternatives Considered:** Exact matching with `.trim().toLowerCase()`, which fails on suffixes like "S".
+**Why:** The application backend is hosted on a Railway server (located in the US/Singapore), while the Vercel frontend is distributed via Edge. Standard `useState` fetching caused a ~1000ms network round-trip delay every time a user switched between the "Expenses", "Balances", and "Members" tabs, leading to a sluggish UX. 
+Instead of building a complex Redux store to hold this data manually, we integrated `swr`. SWR aggressively caches API responses in the browser's memory. When the user clicks a tab, the data loads instantly (0ms latency) from the local cache, while SWR silently revalidates the data against the remote backend in the background. This single architectural shift made the entire application feel instantaneous.
 
-### 8. Authentication Scope
-- **Decision:** Use simple JWT-based auth with a 7-day expiry, no refresh tokens, and no email verification.
-- **Why:** Intentionally scoped down for a 2-day assignment. The core logic of Kharchwise is the balance engine and group management, not auth boilerplate. 
-- **Production Path:** For a production release, we would add rotating refresh tokens (stored in HTTP-only cookies), email verification via Magic Links or OTP, and rate limiting on the `/login` route to prevent brute force attacks.
+## 3. Handling CSV Import Errors: Abort vs Quarantine
+**Options Considered:**
+1. **Strict Abort:** If a 500-row CSV contains one bad row (e.g., negative amount, unknown user), abort the entire import and return a 400 error.
+2. **Silent Drop:** Import all valid rows, and silently delete/ignore any rows with errors.
+3. **Quarantine Architecture:** Import valid rows immediately, and route invalid rows into a dedicated "Anomaly" quarantine state for user review.
 
-### 9. Soft-Closing Memberships
-- **Decision:** Removing a member from a group only updates `left_at = now()`. It does not delete the row.
-- **Why:** Historical balance calculations for past expenses must remain valid. If Meera leaves the flat, the fact that she was there in February and incurred rent expenses cannot be erased, otherwise the sum of the system's ledger breaks.
+**Decision:** We chose the **Quarantine Architecture**.
 
-### 10. Balance Engine Architecture
-- **Decision:** The Balance Engine (`balanceEngine.ts`) is built as a pure, side-effect-free isolated module. 
-- **Why:** Financial calculation algorithms are highly prone to edge case bugs and changing business requirements. By isolating it entirely from the Express controllers and side effects, it allows comprehensive unit testing (like the money conservation theorem check) and makes it trivial to change rounding rules or calculation logic later without touching API routing.
+**Why:** The strict abort method results in a terrible user experience—users would have to manually edit their massive CSVs in Excel multiple times just to get a successful import. The silent drop method is dangerous for a financial app, as it quietly loses user money. 
+By creating an `ImportAnomaly` database table, the backend parses a massive CSV, safely ingests the 99% of valid rows, and flags the 1% of problematic rows. The user is presented with a UI report of these anomalies and can resolve them individually (e.g., mapping a misspelled name to a real user, or rejecting a duplicate).
 
-### 11. Frontend Aesthetics (The "Fold" Theme)
-- **Decision:** Implemented a Bauhaus poster aesthetic inspired by the "Fold" app style.
-- **Why:** To fulfill the recruiter's specific request for a premium, clean, and opinionated visual language. The design uses `Midnight Navy` for text, `Fog White` for the app background, and perfectly pill-shaped buttons (`9999px` border radius) along with soft navy-tinted shadows instead of harsh black borders or gray shadows.
+## 4. Separation of Environments: Monorepo vs Multi-repo
+**Options Considered:**
+1. Multi-repo (Frontend in one GitHub repo, Backend in another)
+2. Monorepo (Single GitHub repository containing both)
 
-### 12. Centralized API Client
-- **Decision:** Introduced a unified `api.ts` module in the React frontend.
-- **Why:** To prevent code duplication across the many fetch calls and ensure that authentication tokens and session expirations (e.g., handling 401s by clearing `localStorage` and redirecting to login) are managed centrally.
+**Decision:** We chose a **Monorepo**.
+
+**Why:** Keeping the frontend and backend in the same repository allowed for rapid iteration and unified pull requests. We could easily track sweeping features (like integrating the SWR caching or building the Anomaly endpoints) in a single git commit that touched both `frontend/` and `backend/`. This also simplified deploying to Vercel (which just points to the `frontend` folder) and Railway (which points to the `backend` folder) from a single source of truth.
