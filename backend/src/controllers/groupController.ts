@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middlewares/requireAuth';
+import { BalanceEngine } from '../services/balanceEngine';
 
 const prisma = new PrismaClient();
+const balanceEngine = new BalanceEngine();
 
 // POST /api/groups
 export const createGroup = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -44,13 +46,17 @@ export const listGroups = async (req: AuthRequest, res: Response): Promise<void>
       include: { group: true }
     });
 
-    const result = memberships.map(m => ({
-      ...m.group,
-      membership: {
-        joined_at: m.joined_at,
-        left_at: m.left_at,
-        isActive: m.left_at === null
-      }
+    const result = await Promise.all(memberships.map(async m => {
+      const summary = await balanceEngine.getIndividualBalanceSummary(m.group_id, req.user!.userId);
+      return {
+        ...m.group,
+        membership: {
+          joined_at: m.joined_at,
+          left_at: m.left_at,
+          isActive: m.left_at === null
+        },
+        netBalance: summary.netBalance
+      };
     }));
     
     res.json(result);

@@ -134,7 +134,7 @@ export const Groups = () => {
             </Card>
           ) : (
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-3">
-              {activeGroups.map((group, index) => (
+              {activeGroups.map((group) => (
                 <motion.div
                   variants={itemVariants}
                   key={group.id}
@@ -176,23 +176,16 @@ export const Groups = () => {
                       {/* Right: Dummy Stats & Arrow */}
                       <div className="flex items-center justify-between sm:justify-end gap-8 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-[rgba(255,255,255,0.05)] relative z-10">
                         
-                        {/* Fake Data Layout mockup */}
-                        {index % 3 === 0 ? (
-                          <div className="flex flex-col items-start sm:items-end">
-                            <span className="text-[12px] font-bold text-[rgba(255,255,255,0.4)] mb-1 uppercase tracking-widest">Your Balance</span>
-                            <span className="text-[18px] font-bold text-[#3CE370] tracking-tight">+ ₹1,250</span>
-                          </div>
-                        ) : index % 3 === 1 ? (
-                          <div className="flex flex-col items-start sm:items-end">
-                            <span className="text-[12px] font-bold text-[rgba(255,255,255,0.4)] mb-1 uppercase tracking-widest">Your Balance</span>
-                            <span className="text-[18px] font-bold text-[#FF5F56] tracking-tight">- ₹800</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-start sm:items-end">
-                            <span className="text-[12px] font-bold text-[rgba(255,255,255,0.4)] mb-1 uppercase tracking-widest">Your Balance</span>
+                        <div className="flex flex-col items-start sm:items-end">
+                          <span className="text-[12px] font-bold text-[rgba(255,255,255,0.4)] mb-1 uppercase tracking-widest">Your Balance</span>
+                          {group.netBalance === 0 ? (
                             <span className="text-[18px] font-bold text-white tracking-tight">Settled</span>
-                          </div>
-                        )}
+                          ) : group.netBalance > 0 ? (
+                            <span className="text-[18px] font-bold text-[#3CE370] tracking-tight">+ ₹{group.netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          ) : (
+                            <span className="text-[18px] font-bold text-[#FF5F56] tracking-tight">- ₹{Math.abs(group.netBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          )}
+                        </div>
 
                         <div className="w-10 h-10 shrink-0 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(255,255,255,0.4)] group-hover:text-[#070709] group-hover:bg-[#3CE370] group-hover:border-[#3CE370] hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
                           <svg className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
